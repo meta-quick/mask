@@ -1,7 +1,8 @@
-package mask
+package anonymity
 
 import (
 	"fmt"
+	"github.com/meta-quick/mask/utils"
 	"strconv"
 )
 
@@ -13,7 +14,7 @@ func NewPrefixPreserveMasker() *PrefixPreserveMasker {
 }
 
 func (m *PrefixPreserveMasker) mapping(c rune,fixed bool) rune {
-	return CharMapping(c,'*',fixed)
+	return utils.CharMapping(c,'*',fixed)
 }
 
 func (p PrefixPreserveMasker) MaskInteger(i int64,preserved int) (int64,error) {
