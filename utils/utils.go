@@ -62,4 +62,3 @@ func CharMapping(c rune, replace rune,fixed bool) rune {
 	}
 	return replace
 }
-
