@@ -1,8 +1,8 @@
 package jsonmask
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/bytedance/sonic"
 	"github.com/meta-quick/mask/types"
 	"strconv"
 	"strings"
@@ -104,7 +104,7 @@ func (m *Masker) walkThrough(b []byte, storage *[]types.BuiltinContext, p chan b
 		wg.Done()
 	}()
 	var gson interface{}
-	err := json.Unmarshal(b, &gson)
+	err := sonic.Unmarshal(b, &gson)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func (m *Masker) walkThrough(b []byte, storage *[]types.BuiltinContext, p chan b
 }
 
 func (m *Masker) next(v interface{}, storage *[]types.BuiltinContext, p chan bool, wg *sync.WaitGroup) error {
-	b, err := json.Marshal(v)
+	b, err := sonic.Marshal(v)
 	if err != nil {
 		return err
 	}
