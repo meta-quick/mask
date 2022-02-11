@@ -46,18 +46,21 @@ func OverlayString(in string, overlay string, start int, end int) (overlayed str
 	return overlayed
 }
 
-func CharMapping(c rune, replace rune,fixed bool) rune {
+func init() {
 	rand.Seed(time.Now().UnixNano())
+}
+
+func CharMapping(c rune, replace rune, fixed bool) rune {
 	if unicode.IsDigit(c) {
-		return rune('0'+rand.Intn(10))
+		return rune('0' + rand.Intn(10))
 	} else if unicode.IsLetter(c) {
-		if(fixed) {
+		if fixed {
 			return replace
 		}
 		if c <= 90 {
-			return rune('A'+rand.Intn(26))
+			return rune('A' + rand.Intn(26))
 		} else {
-			return rune('a'+rand.Intn(26))
+			return rune('a' + rand.Intn(26))
 		}
 	}
 	return replace
