@@ -33,8 +33,8 @@ var defaultSensitiveData = map[string]ProcessHandle{
 		Args: []string{"2"},
 	},
 	"identification" :ProcessHandle{
-		Fn: types.PFE_MASK_STR.Name,
-		Args: []string{"2"},
+		Fn: types.HIDE_MASK_STRX.Name,
+		Args: []string{"10","16"},
 	},
 	"national" :ProcessHandle{
 		Fn: types.PFE_MASK_STR.Name,
@@ -53,6 +53,10 @@ var defaultSensitiveData = map[string]ProcessHandle{
 		Args: []string{"6"},
 	},
 	"number" :ProcessHandle{
+		Fn: types.PFE_MASK_STR.Name,
+		Args: []string{"2"},
+	},
+	"fnumber" :ProcessHandle{
 		Fn: types.PFE_MASK_STR.Name,
 		Args: []string{"2"},
 	},
@@ -117,6 +121,8 @@ func (m *Masker) walkThrough(b []byte, storage *[]types.BuiltinContext, p chan b
 			case float64:
 				m.sensitive(k, v, storage)
 			case int32:
+				m.sensitive(k, v, storage)
+			case bool:
 				m.sensitive(k, v, storage)
 			case []interface{}:
 				for _, val := range v {
