@@ -86,6 +86,8 @@ var DefaultBuiltins = []*Builtin{
 	FLOOR_MASK_FLOAT64,
 	FLOOR_MASK_TIMEINMSEC,
 	FLOOR_MASK_TIMESTRING,
+	SM2_MASK_STR,
+	SM4_MASK_STR,
 }
 
 var DefaultHandlerBuiltins = map[string]BuiltinFunc{
