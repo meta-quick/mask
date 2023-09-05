@@ -373,8 +373,8 @@ var SM2_MASK_STR = &Builtin{
 }
 
 func SM2_MASK_STR_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
+	data := args[0].(string)
 	publickKey := args[1].(string)
-	endstr := args[2].(string)
 
 	if !strings.Contains(publickKey, "PUBLIC KEY") {
 		publickKey = "-----BEGIN PUBLIC KEY-----\r\n" +
@@ -386,14 +386,14 @@ func SM2_MASK_STR_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	pubMen, err := x509.ReadPublicKeyFromPem(d2)
 	if err != nil {
 		fmt.Printf("SM2加密失败,采用原数据返回")
-		return endstr
+		return data
 	}
 
-	msg := []byte(endstr)
+	msg := []byte(data)
 	ciphertxt, err := sm2.Encrypt(pubMen, msg, nil, sm2.C1C3C2)
 	if err != nil {
 		fmt.Printf("SM2加密失败,采用原数据返回")
-		return endstr
+		return data
 	}
 
 	return hex.EncodeToString(ciphertxt)
@@ -411,8 +411,8 @@ var SM4_MASK_STR = &Builtin{
 }
 
 func SM4_MASK_STR_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
+	data := args[0].(string)
 	key := args[1].(string)
-	data := args[2].(string)
 
 	r, err := sm4.Sm4Ecb([]byte(key), []byte(data), true) //sm4Ecb模式pksc7填充加密
 	if err != nil {
