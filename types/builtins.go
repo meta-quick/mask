@@ -2,32 +2,39 @@ package types
 
 import (
 	"context"
+	"encoding/hex"
+	"fmt"
 	"github.com/meta-quick/mask/anonymity"
+	"github.com/tjfoc/gmsm/sm2"
+	"github.com/tjfoc/gmsm/sm4"
+	"github.com/tjfoc/gmsm/x509"
+	"strings"
 	"time"
 )
 
 type (
 	Builtin struct {
-		Name       string          `json:"name"`
+		Name       string    `json:"name"`
 		Decl       *Function `json:"decl"`
-		Infix      string          `json:"infix,omitempty"`
-		Relation   bool            `json:"relation,omitempty"`
+		Infix      string    `json:"infix,omitempty"`
+		Relation   bool      `json:"relation,omitempty"`
 		deprecated bool
 	}
 
 	BuiltinContext struct {
-		Context                context.Context
-		Current                string  //current content to be handled
-		Fn                     string       //current mask process function
-		Args                   []string//current mask process function
-		Result				   interface{}  //return result
-		Err                    error        //error if any
+		Context context.Context
+		Current string      //current content to be handled
+		Fn      string      //current mask process function
+		Args    []string    //current mask process function
+		Result  interface{} //return result
+		Err     error       //error if any
 	}
 	BuiltinFunc func(bctx *BuiltinContext, operands []interface{}) interface{}
 )
 
 var Builtins []*Builtin
 var BuiltinMap map[string]*Builtin
+
 func RegisterBuiltin(b *Builtin) {
 	Builtins = append(Builtins, b)
 	BuiltinMap[b.Name] = b
@@ -38,7 +45,7 @@ func RegisterBuiltin(b *Builtin) {
 
 var builtinFunctions = map[string]BuiltinFunc{}
 
-func RegisterFunction(key string,fn BuiltinFunc) {
+func RegisterFunction(key string, fn BuiltinFunc) {
 	builtinFunctions[key] = fn
 }
 
@@ -64,7 +71,7 @@ var PFE_MASK_STR = &Builtin{
 	),
 }
 
-var DefaultBuiltins = []*Builtin {
+var DefaultBuiltins = []*Builtin{
 	PFE_MASK_NUM,
 	PFE_MASK_STR,
 	HIDE_MASK_STR,
@@ -81,21 +88,22 @@ var DefaultBuiltins = []*Builtin {
 	FLOOR_MASK_TIMESTRING,
 }
 
-var DefaultHandlerBuiltins = map[string]BuiltinFunc {
-	PFE_MASK_NUM.Name: PFE_MASK_NUM_HANDLE,
-	PFE_MASK_STR.Name: PFE_MASK_STR_HANDLE,
-	HIDE_MASK_STR.Name: HIDING_MASK_STR_HANDLE,
-	HIDE_MASK_BOOLEAN.Name: HIDING_MASK_BOOLEAN_HANDLE,
-	HIDE_MASK_FLOAT32.Name: HIDING_MASK_FLOAT32_HANDLE,
-	HIDE_MASK_FLOAT64.Name: HIDING_MASK_FLOAT64_HANDLE,
-	HIDE_MASK_INT32.Name: HIDING_MASK_INT32_HANDLE,
-	HIDE_MASK_INT64.Name: HIDING_MASK_INT64_HANDLE,
-	HIDE_MASK_DATESTRING.Name: HIDING_MASK_TIME_HANDLE,
-	HIDE_MASK_DATE_MSEC.Name: HIDING_MASK_TIMEMSEC_HANDLE,
-	HIDE_MASK_STRX.Name: HIDING_MASK_STR0_HANDLE,
-	FLOOR_MASK_FLOAT64.Name: FLOOR_MASK_FLOAT64_HANDLE,
+var DefaultHandlerBuiltins = map[string]BuiltinFunc{
+	PFE_MASK_NUM.Name:          PFE_MASK_NUM_HANDLE,
+	PFE_MASK_STR.Name:          PFE_MASK_STR_HANDLE,
+	HIDE_MASK_STR.Name:         HIDING_MASK_STR_HANDLE,
+	HIDE_MASK_BOOLEAN.Name:     HIDING_MASK_BOOLEAN_HANDLE,
+	HIDE_MASK_FLOAT32.Name:     HIDING_MASK_FLOAT32_HANDLE,
+	HIDE_MASK_FLOAT64.Name:     HIDING_MASK_FLOAT64_HANDLE,
+	HIDE_MASK_INT32.Name:       HIDING_MASK_INT32_HANDLE,
+	HIDE_MASK_INT64.Name:       HIDING_MASK_INT64_HANDLE,
+	HIDE_MASK_DATESTRING.Name:  HIDING_MASK_TIME_HANDLE,
+	HIDE_MASK_DATE_MSEC.Name:   HIDING_MASK_TIMEMSEC_HANDLE,
+	HIDE_MASK_STRX.Name:        HIDING_MASK_STR0_HANDLE,
+	FLOOR_MASK_FLOAT64.Name:    FLOOR_MASK_FLOAT64_HANDLE,
 	FLOOR_MASK_TIMEINMSEC.Name: FLOOR_MASK_TIMEMSEC_HANDLE,
-	FLOOR_MASK_TIMESTRING.Name: FLOOR_MASK_TIME_HANDLE,
+	SM2_MASK_STR.Name:          SM2_MASK_STR_HANDLE,
+	SM4_MASK_STR.Name:          SM4_MASK_STR_HANDLE,
 }
 
 func init() {
@@ -110,15 +118,15 @@ func init() {
 	}
 }
 
-func PFE_MASK_NUM_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+func PFE_MASK_NUM_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	pfe := anonymity.NewPrefixPreserveMasker()
-	output,_ :=	pfe.MaskInteger(args[0].(int64),args[1].(int))
+	output, _ := pfe.MaskInteger(args[0].(int64), args[1].(int))
 	return output
 }
 
-func PFE_MASK_STR_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+func PFE_MASK_STR_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	pfe := anonymity.NewPrefixPreserveMasker()
-	output,_ :=	pfe.MaskString(args[0].(string),args[1].(int))
+	output, _ := pfe.MaskString(args[0].(string), args[1].(int))
 	return output
 }
 
@@ -133,9 +141,9 @@ var HIDE_MASK_STR = &Builtin{
 	),
 }
 
-func HIDING_MASK_STR_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+func HIDING_MASK_STR_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	hiding := anonymity.NewHidingMasker()
-	output,_ :=	hiding.MaskString(args[0].(string),args[1].(string))
+	output, _ := hiding.MaskString(args[0].(string), args[1].(string))
 	return output
 }
 
@@ -148,9 +156,10 @@ var HIDE_MASK_BOOLEAN = &Builtin{
 		B,
 	),
 }
-func HIDING_MASK_BOOLEAN_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+
+func HIDING_MASK_BOOLEAN_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	hiding := anonymity.NewHidingMasker()
-	output,_ :=	hiding.MaskBool(args[0].(bool))
+	output, _ := hiding.MaskBool(args[0].(bool))
 	return output
 }
 
@@ -163,9 +172,10 @@ var HIDE_MASK_FLOAT32 = &Builtin{
 		F,
 	),
 }
-func HIDING_MASK_FLOAT32_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+
+func HIDING_MASK_FLOAT32_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	hiding := anonymity.NewHidingMasker()
-	output,_ :=	hiding.MaskFloat32(args[0].(float32))
+	output, _ := hiding.MaskFloat32(args[0].(float32))
 	return output
 }
 
@@ -178,9 +188,10 @@ var HIDE_MASK_FLOAT64 = &Builtin{
 		F,
 	),
 }
-func HIDING_MASK_FLOAT64_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+
+func HIDING_MASK_FLOAT64_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	hiding := anonymity.NewHidingMasker()
-	output,_ :=	hiding.MaskFloat64(args[0].(float64))
+	output, _ := hiding.MaskFloat64(args[0].(float64))
 	return output
 }
 
@@ -193,9 +204,10 @@ var HIDE_MASK_INT32 = &Builtin{
 		N32,
 	),
 }
-func HIDING_MASK_INT32_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+
+func HIDING_MASK_INT32_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	hiding := anonymity.NewHidingMasker()
-	output,_ :=	hiding.MaskInt(args[0].(int))
+	output, _ := hiding.MaskInt(args[0].(int))
 	return output
 }
 
@@ -208,21 +220,22 @@ var HIDE_MASK_INT64 = &Builtin{
 		N,
 	),
 }
-func HIDING_MASK_INT64_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+
+func HIDING_MASK_INT64_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	hiding := anonymity.NewHidingMasker()
-	output,_ :=	hiding.MaskInt64(args[0].(int64))
+	output, _ := hiding.MaskInt64(args[0].(int64))
 	return output
 }
 
-func HIDING_MASK_UINT32_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+func HIDING_MASK_UINT32_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	hiding := anonymity.NewHidingMasker()
-	output,_ :=	hiding.MaskUint(args[0].(uint))
+	output, _ := hiding.MaskUint(args[0].(uint))
 	return output
 }
 
-func HIDING_MASK_UINT64_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+func HIDING_MASK_UINT64_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	hiding := anonymity.NewHidingMasker()
-	output,_ :=	hiding.MaskUint64(args[0].(uint64))
+	output, _ := hiding.MaskUint64(args[0].(uint64))
 	return output
 }
 
@@ -235,10 +248,11 @@ var HIDE_MASK_DATESTRING = &Builtin{
 		S,
 	),
 }
-func HIDING_MASK_TIME_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+
+func HIDING_MASK_TIME_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	hiding := anonymity.NewHidingMasker()
-	tt,_ := time.Parse("2006-01-02 15:04:05",args[0].(string))
-	output,_ :=	hiding.MaskTime(&tt)
+	tt, _ := time.Parse("2006-01-02 15:04:05", args[0].(string))
+	output, _ := hiding.MaskTime(&tt)
 	return output.Format("2006-01-02 15:04:05")
 }
 
@@ -251,10 +265,11 @@ var HIDE_MASK_DATE_MSEC = &Builtin{
 		N,
 	),
 }
-func HIDING_MASK_TIMEMSEC_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+
+func HIDING_MASK_TIMEMSEC_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	hiding := anonymity.NewHidingMasker()
 	tt := time.UnixMilli(args[0].(int64))
-	output,_ :=	hiding.MaskTime(&tt)
+	output, _ := hiding.MaskTime(&tt)
 	return output.UnixMilli()
 }
 
@@ -270,9 +285,10 @@ var HIDE_MASK_STRX = &Builtin{
 		S,
 	),
 }
-func HIDING_MASK_STR0_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+
+func HIDING_MASK_STR0_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	hiding := anonymity.NewHidingMasker()
-	output,_ :=	hiding.MaskString0(args[0].(string),args[1].(string),args[2].(int),args[3].(int))
+	output, _ := hiding.MaskString0(args[0].(string), args[1].(string), args[2].(int), args[3].(int))
 	return output
 }
 
@@ -286,9 +302,10 @@ var FLOOR_MASK_FLOAT32 = &Builtin{
 		F,
 	),
 }
-func FLOOR_MASK_FLOAT32_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+
+func FLOOR_MASK_FLOAT32_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	floor := anonymity.NewFloorMasker()
-	output,_ :=	floor.MaskFloat32(args[0].(float32))
+	output, _ := floor.MaskFloat32(args[0].(float32))
 	return output
 }
 
@@ -301,9 +318,10 @@ var FLOOR_MASK_FLOAT64 = &Builtin{
 		N,
 	),
 }
-func FLOOR_MASK_FLOAT64_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+
+func FLOOR_MASK_FLOAT64_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	floor := anonymity.NewFloorMasker()
-	output,_ :=	floor.MaskFloat64(args[0].(float64))
+	output, _ := floor.MaskFloat64(args[0].(float64))
 	return output
 }
 
@@ -317,10 +335,11 @@ var FLOOR_MASK_TIMESTRING = &Builtin{
 		S,
 	),
 }
-func FLOOR_MASK_TIME_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+
+func FLOOR_MASK_TIME_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	floor := anonymity.NewFloorMasker()
-	tt,_ := time.Parse("2006-01-02 15:04:05",args[0].(string))
-	output,_ :=	floor.MaskTime(tt,args[1].(string))
+	tt, _ := time.Parse("2006-01-02 15:04:05", args[0].(string))
+	output, _ := floor.MaskTime(tt, args[1].(string))
 	return output.Format("2006-01-02 15:04:05")
 }
 
@@ -334,9 +353,71 @@ var FLOOR_MASK_TIMEINMSEC = &Builtin{
 		N,
 	),
 }
-func FLOOR_MASK_TIMEMSEC_HANDLE(bctx *BuiltinContext,args []interface{}) interface{} {
+
+func FLOOR_MASK_TIMEMSEC_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	floor := anonymity.NewFloorMasker()
 	tt := time.UnixMilli(args[0].(int64))
-	output,_ :=	floor.MaskTime(tt,args[1].(string))
+	output, _ := floor.MaskTime(tt, args[1].(string))
 	return output.UnixMilli()
+}
+
+var SM2_MASK_STR = &Builtin{
+	Name: "mx.sm2.mask_string",
+	Decl: NewFunction(
+		Args(
+			S,
+			S,
+		),
+		S,
+	),
+}
+
+func SM2_MASK_STR_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
+	publickKey := args[1].(string)
+	endstr := args[2].(string)
+
+	if !strings.Contains(publickKey, "PUBLIC KEY") {
+		publickKey = "-----BEGIN PUBLIC KEY-----\r\n" +
+			publickKey + "\r\n" +
+			"-----END PUBLIC KEY-----"
+	}
+
+	d2 := []byte(publickKey)
+	pubMen, err := x509.ReadPublicKeyFromPem(d2)
+	if err != nil {
+		fmt.Printf("SM2加密失败,采用原数据返回")
+		return endstr
+	}
+
+	msg := []byte(endstr)
+	ciphertxt, err := sm2.Encrypt(pubMen, msg, nil, sm2.C1C3C2)
+	if err != nil {
+		fmt.Printf("SM2加密失败,采用原数据返回")
+		return endstr
+	}
+
+	return hex.EncodeToString(ciphertxt)
+}
+
+var SM4_MASK_STR = &Builtin{
+	Name: "mx.sm4.mask_string",
+	Decl: NewFunction(
+		Args(
+			S,
+			S,
+		),
+		S,
+	),
+}
+
+func SM4_MASK_STR_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
+	key := args[1].(string)
+	data := args[2].(string)
+
+	r, err := sm4.Sm4Ecb([]byte(key), []byte(data), true) //sm4Ecb模式pksc7填充加密
+	if err != nil {
+		fmt.Printf("SM4加密失败,采用原数据返回")
+		return data
+	}
+	return string(r)
 }
