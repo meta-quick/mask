@@ -2,7 +2,7 @@ package types
 
 import (
 	"context"
-	"encoding/hex"
+	"encoding/base64"
 	"fmt"
 	"github.com/meta-quick/mask/anonymity"
 	"github.com/tjfoc/gmsm/sm2"
@@ -398,7 +398,7 @@ func SM2_MASK_STR_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 		return data
 	}
 
-	return hex.EncodeToString(ciphertxt)
+	return base64.StdEncoding.EncodeToString(ciphertxt)
 }
 
 var SM4_MASK_STR = &Builtin{
@@ -421,5 +421,5 @@ func SM4_MASK_STR_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 		fmt.Printf("SM4加密失败,采用原数据返回")
 		return data
 	}
-	return string(r)
+	return base64.StdEncoding.EncodeToString(r)
 }
