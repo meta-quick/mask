@@ -8,6 +8,7 @@ import (
 	"github.com/tjfoc/gmsm/sm2"
 	"github.com/tjfoc/gmsm/sm4"
 	"github.com/tjfoc/gmsm/x509"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -88,6 +89,7 @@ var DefaultBuiltins = []*Builtin{
 	FLOOR_MASK_TIMESTRING,
 	SM2_MASK_STR,
 	SM4_MASK_STR,
+	PHONE_MASK,
 }
 
 var DefaultHandlerBuiltins = map[string]BuiltinFunc{
@@ -106,6 +108,7 @@ var DefaultHandlerBuiltins = map[string]BuiltinFunc{
 	FLOOR_MASK_TIMEINMSEC.Name: FLOOR_MASK_TIMEMSEC_HANDLE,
 	SM2_MASK_STR.Name:          SM2_MASK_STR_HANDLE,
 	SM4_MASK_STR.Name:          SM4_MASK_STR_HANDLE,
+	PHONE_MASK.Name:            PHONE_MASK_HANDLE,
 }
 
 func init() {
@@ -422,4 +425,69 @@ func SM4_MASK_STR_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 		return data
 	}
 	return base64.StdEncoding.EncodeToString(r)
+}
+
+var PHONE_MASK = &Builtin{
+	Name: "mx.phone.mask_string",
+	Decl: NewFunction(
+		Args(
+			S,
+			N32,
+			N32,
+		),
+		S,
+	),
+}
+
+var keyArr = []int{1, 7, 7, 9, 1, 8, 5, 0, 6, 0, 4, 1, 2, 9, 8, 4, 1, 5, 7, 6}
+var shuffleArr = []int{7, 5, 4, 6, 2, 1, 3, 0, 9, 8}
+
+func PHONE_MASK_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
+	phone := args[0].(string)
+	start := args[1].(int)
+	end := args[2].(int)
+
+	if end <= start {
+		fmt.Printf("错误的参数,end参数必须比start参数大")
+		return phone
+	}
+	if end > len(keyArr) {
+		fmt.Printf("此算法只支持" + strconv.Itoa(len(keyArr)) + "长度的字符串")
+		return phone
+	}
+	// 移除非数字字符
+	digits := strings.Map(func(r rune) rune {
+		if r >= '0' && r <= '9' {
+			return r
+		}
+		return -1
+	}, phone)
+	if len(digits) < len(phone) {
+		fmt.Printf("此算法只支持纯数字字符串")
+		return phone
+	}
+	if len(digits) < end {
+		fmt.Printf("待加密字符串长度小于参数end " + strconv.Itoa(end))
+		return phone
+	}
+	runes := []rune(digits)
+	// 旋转加数
+	for i := range runes {
+		if i >= start && i < end {
+			temp := int(runes[i]) - '0'
+			runes[i] = rune((temp+keyArr[i])%10 + '0')
+		}
+	}
+	// 换位
+	shuffleString(runes, start, end)
+	return string(runes)
+}
+
+func shuffleString(runes []rune, start int, end int) {
+	for i := range runes {
+		if i >= start && i < end {
+			temp := int(runes[i]) - '0'
+			runes[i] = rune(shuffleArr[temp] + '0')
+		}
+	}
 }
