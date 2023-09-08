@@ -3,12 +3,10 @@ package types
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 	"github.com/meta-quick/mask/anonymity"
 	"github.com/tjfoc/gmsm/sm2"
 	"github.com/tjfoc/gmsm/sm4"
 	"github.com/tjfoc/gmsm/x509"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -390,14 +388,12 @@ func SM2_MASK_STR_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	d2 := []byte(publickKey)
 	pubMen, err := x509.ReadPublicKeyFromPem(d2)
 	if err != nil {
-		fmt.Printf("SM2加密失败,采用原数据返回")
 		return data
 	}
 
 	msg := []byte(data)
 	ciphertxt, err := sm2.Encrypt(pubMen, msg, nil, sm2.C1C3C2)
 	if err != nil {
-		fmt.Printf("SM2加密失败,采用原数据返回")
 		return data
 	}
 
@@ -421,7 +417,6 @@ func SM4_MASK_STR_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 
 	r, err := sm4.Sm4Ecb([]byte(key), []byte(data), true) //sm4Ecb模式pksc7填充加密
 	if err != nil {
-		fmt.Printf("SM4加密失败,采用原数据返回")
 		return data
 	}
 	return base64.StdEncoding.EncodeToString(r)
@@ -448,11 +443,9 @@ func PHONE_MASK_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	end := args[2].(int)
 
 	if end <= start {
-		fmt.Printf("错误的参数,end参数必须比start参数大")
 		return phone
 	}
 	if end > len(keyArr) {
-		fmt.Printf("此算法只支持" + strconv.Itoa(len(keyArr)) + "长度的字符串")
 		return phone
 	}
 	// 移除非数字字符
@@ -463,11 +456,9 @@ func PHONE_MASK_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 		return -1
 	}, phone)
 	if len(digits) < len(phone) {
-		fmt.Printf("此算法只支持纯数字字符串")
 		return phone
 	}
 	if len(digits) < end {
-		fmt.Printf("待加密字符串长度小于参数end " + strconv.Itoa(end))
 		return phone
 	}
 	runes := []rune(digits)
