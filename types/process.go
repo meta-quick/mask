@@ -7,8 +7,14 @@ import (
 )
 
 func Eval(ctx *BuiltinContext) {
+	defer func() {
+		if err := recover(); err != nil {
+			//silent
+		}
+	}()
+
 	_args := ctx.Args
-	ctx.Args = make([]string,len(ctx.Args)+1)
+	ctx.Args = make([]string, len(ctx.Args)+1)
 
 	for i := 0; i < len(_args); i++ {
 		ctx.Args[i+1] = _args[i]
@@ -16,34 +22,34 @@ func Eval(ctx *BuiltinContext) {
 	ctx.Args[0] = ctx.Current
 
 	if fn, ok := builtinFunctions[ctx.Fn]; ok {
-		if decl,ok1 := BuiltinMap[ctx.Fn];ok1 {
-			Args :=  decl.Decl.Args()
-			args := buildArgs(Args,ctx)
-			ctx.Result = fn(ctx,args)
+		if decl, ok1 := BuiltinMap[ctx.Fn]; ok1 {
+			Args := decl.Decl.Args()
+			args := buildArgs(Args, ctx)
+			ctx.Result = fn(ctx, args)
 		}
 	}
 }
 
 func BuildBody(v interface{}) string {
-	switch body := v.(type){
+	switch body := v.(type) {
 	case string:
 		return body
 	case float64:
-		output := fmt.Sprintf("%f",body)
+		output := fmt.Sprintf("%f", body)
 		return output
 	case float32:
-		output := fmt.Sprintf("%f",body)
+		output := fmt.Sprintf("%f", body)
 		return output
 	case int64:
-		output := fmt.Sprintf("%d",body)
+		output := fmt.Sprintf("%d", body)
 		return output
 	case int:
-		output := fmt.Sprintf("%d",body)
+		output := fmt.Sprintf("%d", body)
 		return output
 	case bool:
 		output := "false"
 		if body {
-		   output = "true"
+			output = "true"
 		}
 		return output
 	}
@@ -51,29 +57,29 @@ func BuildBody(v interface{}) string {
 	return ""
 }
 
-func buildArgs(Args []Type,ctx *BuiltinContext) []interface{} {
-	output := make([]interface{},len(Args))
+func buildArgs(Args []Type, ctx *BuiltinContext) []interface{} {
+	output := make([]interface{}, len(Args))
 
-	for i,arg := range Args {
+	for i, arg := range Args {
 		switch ty := arg.(type) {
 		case String:
 			output[i] = ctx.Args[i]
 		case Number:
-			output[i],ctx.Err = strconv.ParseInt(ctx.Args[i], 10, 64)
+			output[i], ctx.Err = strconv.ParseInt(ctx.Args[i], 10, 64)
 		case Boolean:
 			output[i] = ctx.Args[i] == "true"
 		case Float64:
-			output[i],ctx.Err = strconv.ParseFloat(ctx.Args[i], 64)
+			output[i], ctx.Err = strconv.ParseFloat(ctx.Args[i], 64)
 		case Null:
 			output[i] = nil
 		case Number32:
-			output[i],ctx.Err = strconv.Atoi(ctx.Args[i])
+			output[i], ctx.Err = strconv.Atoi(ctx.Args[i])
 		case Date:
-			output[i],ctx.Err = time.Parse(time.RFC3339,ctx.Args[i])
+			output[i], ctx.Err = time.Parse(time.RFC3339, ctx.Args[i])
 		case Any:
 			output[i] = arg.(Any)
 		default:
-			fmt.Printf("%d  %T\n",i,ty)
+			fmt.Printf("%d  %T\n", i, ty)
 		}
 	}
 
