@@ -92,6 +92,8 @@ var DefaultBuiltins = []*Builtin{
 	SM2_MASK_STR,
 	SM4_MASK_STR,
 	PHONE_MASK,
+	CUSTOMER_MASK_MD_ID,
+	CUSTOMER_MASK_PHONE_NUMBER,
 }
 
 var DefaultHandlerBuiltins = map[string]BuiltinFunc{
