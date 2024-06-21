@@ -4,9 +4,9 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"github.com/bytedance/sonic"
-	"github.com/duke-git/lancet/v2/convertor"
 	"github.com/meta-quick/mask/anonymity"
 	"github.com/tjfoc/gmsm/sm2"
 	"github.com/tjfoc/gmsm/sm4"
@@ -460,12 +460,8 @@ func CUSTOMER_MASK_MD_ID_HANDLE(bctx *BuiltinContext, args []interface{}) interf
 	}
 	userId := inputMap["sub"]
 
-	bytes, err := convertor.ToBytes(userId)
-	if err != nil {
-		return nil
-	}
-	sum := md5.Sum(bytes)
-	return convertor.ToString(sum)
+	hash := md5.Sum([]byte(userId.(string)))
+	return hex.EncodeToString(hash[:])
 }
 
 var CUSTOMER_MASK_PHONE_NUMBER = &Builtin{

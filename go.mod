@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	github.com/bytedance/sonic v1.5.0
-	github.com/duke-git/lancet/v2 v2.1.16
 	github.com/google/differential-privacy/go v1.1.2
 	github.com/rkritchat/jsonmask v0.0.0-20211125203642-005b8ac5c5e5
 	github.com/tjfoc/gmsm v1.4.1
