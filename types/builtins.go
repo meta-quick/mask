@@ -430,7 +430,7 @@ func SM4_MASK_STR_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 }
 
 var PHONE_MASK = &Builtin{
-	Name: "mx.customer.mask_md_id",
+	Name: "mx.phone.mask_string",
 	Decl: NewFunction(
 		Args(
 			S,
