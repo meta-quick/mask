@@ -2,7 +2,11 @@ package types
 
 import (
 	"context"
+	"crypto/md5"
 	"encoding/base64"
+	"fmt"
+	"github.com/bytedance/sonic"
+	"github.com/duke-git/lancet/v2/convertor"
 	"github.com/meta-quick/mask/anonymity"
 	"github.com/tjfoc/gmsm/sm2"
 	"github.com/tjfoc/gmsm/sm4"
@@ -91,23 +95,25 @@ var DefaultBuiltins = []*Builtin{
 }
 
 var DefaultHandlerBuiltins = map[string]BuiltinFunc{
-	PFE_MASK_NUM.Name:          PFE_MASK_NUM_HANDLE,
-	PFE_MASK_STR.Name:          PFE_MASK_STR_HANDLE,
-	HIDE_MASK_STR.Name:         HIDING_MASK_STR_HANDLE,
-	HIDE_MASK_BOOLEAN.Name:     HIDING_MASK_BOOLEAN_HANDLE,
-	HIDE_MASK_FLOAT32.Name:     HIDING_MASK_FLOAT32_HANDLE,
-	HIDE_MASK_FLOAT64.Name:     HIDING_MASK_FLOAT64_HANDLE,
-	HIDE_MASK_INT32.Name:       HIDING_MASK_INT32_HANDLE,
-	HIDE_MASK_INT64.Name:       HIDING_MASK_INT64_HANDLE,
-	HIDE_MASK_DATESTRING.Name:  HIDING_MASK_TIME_HANDLE,
-	HIDE_MASK_DATE_MSEC.Name:   HIDING_MASK_TIMEMSEC_HANDLE,
-	HIDE_MASK_STRX.Name:        HIDING_MASK_STR0_HANDLE,
-	FLOOR_MASK_FLOAT64.Name:    FLOOR_MASK_FLOAT64_HANDLE,
-	FLOOR_MASK_TIMEINMSEC.Name: FLOOR_MASK_TIMEMSEC_HANDLE,
-	FLOOR_MASK_TIMESTRING.Name: FLOOR_MASK_TIME_HANDLE,
-	SM2_MASK_STR.Name:          SM2_MASK_STR_HANDLE,
-	SM4_MASK_STR.Name:          SM4_MASK_STR_HANDLE,
-	PHONE_MASK.Name:            PHONE_MASK_HANDLE,
+	PFE_MASK_NUM.Name:               PFE_MASK_NUM_HANDLE,
+	PFE_MASK_STR.Name:               PFE_MASK_STR_HANDLE,
+	HIDE_MASK_STR.Name:              HIDING_MASK_STR_HANDLE,
+	HIDE_MASK_BOOLEAN.Name:          HIDING_MASK_BOOLEAN_HANDLE,
+	HIDE_MASK_FLOAT32.Name:          HIDING_MASK_FLOAT32_HANDLE,
+	HIDE_MASK_FLOAT64.Name:          HIDING_MASK_FLOAT64_HANDLE,
+	HIDE_MASK_INT32.Name:            HIDING_MASK_INT32_HANDLE,
+	HIDE_MASK_INT64.Name:            HIDING_MASK_INT64_HANDLE,
+	HIDE_MASK_DATESTRING.Name:       HIDING_MASK_TIME_HANDLE,
+	HIDE_MASK_DATE_MSEC.Name:        HIDING_MASK_TIMEMSEC_HANDLE,
+	HIDE_MASK_STRX.Name:             HIDING_MASK_STR0_HANDLE,
+	FLOOR_MASK_FLOAT64.Name:         FLOOR_MASK_FLOAT64_HANDLE,
+	FLOOR_MASK_TIMEINMSEC.Name:      FLOOR_MASK_TIMEMSEC_HANDLE,
+	FLOOR_MASK_TIMESTRING.Name:      FLOOR_MASK_TIME_HANDLE,
+	SM2_MASK_STR.Name:               SM2_MASK_STR_HANDLE,
+	SM4_MASK_STR.Name:               SM4_MASK_STR_HANDLE,
+	PHONE_MASK.Name:                 PHONE_MASK_HANDLE,
+	CUSTOMER_MASK_MD_ID.Name:        CUSTOMER_MASK_MD_ID_HANDLE,
+	CUSTOMER_MASK_PHONE_NUMBER.Name: CUSTOMER_MASK_PHONE_NUMBER_HANDLE,
 }
 
 func init() {
@@ -424,7 +430,7 @@ func SM4_MASK_STR_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 }
 
 var PHONE_MASK = &Builtin{
-	Name: "mx.phone.mask_string",
+	Name: "mx.customer.mask_md_id",
 	Decl: NewFunction(
 		Args(
 			S,
@@ -433,6 +439,51 @@ var PHONE_MASK = &Builtin{
 		),
 		S,
 	),
+}
+
+var CUSTOMER_MASK_MD_ID = &Builtin{
+	Name: "mx.customer.mask_md_id",
+	Decl: NewFunction(
+		Args(),
+		S,
+	),
+}
+
+func CUSTOMER_MASK_MD_ID_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
+	inputS := bctx.Current
+	inputMap := make(map[string]interface{})
+	err := sonic.Unmarshal([]byte(inputS), &inputMap)
+	if err != nil {
+		return nil
+	}
+	userId := inputMap["sub"]
+
+	bytes, err := convertor.ToBytes(userId)
+	if err != nil {
+		return nil
+	}
+	sum := md5.Sum(bytes)
+	return convertor.ToString(sum)
+}
+
+var CUSTOMER_MASK_PHONE_NUMBER = &Builtin{
+	Name: "mx.customer.mask_phone_number",
+	Decl: NewFunction(
+		Args(),
+		S,
+	),
+}
+
+func CUSTOMER_MASK_PHONE_NUMBER_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
+	inputS := bctx.Current
+	inputMap := make(map[string]interface{})
+	err := sonic.Unmarshal([]byte(inputS), &inputMap)
+	if err != nil {
+		return nil
+	}
+	userId := inputMap["sub"].(string)
+
+	return generatePhoneNumber(userId)
 }
 
 var keyArr = []int{1, 7, 7, 9, 1, 8, 5, 0, 6, 0, 4, 1, 2, 9, 8, 4, 1, 5, 7, 6}
@@ -482,4 +533,38 @@ func shuffleString(runes []rune, start int, end int) {
 			runes[i] = rune(shuffleArr[temp] + '0')
 		}
 	}
+}
+
+// 简化的哈希函数，将用户名转换为一个整数
+func simpleHash(username string) int {
+	hash := 0
+	for _, char := range username {
+		hash = (hash*31 + int(char)) % 100000000
+	}
+	return hash
+}
+
+func generatePhoneNumber(username string) string {
+	// 定义支持的手机号前缀
+	phonePrefixes := []string{}
+	for i := 0; i < 10; i++ {
+		phonePrefixes = append(phonePrefixes, fmt.Sprintf("13%d", i))
+		phonePrefixes = append(phonePrefixes, fmt.Sprintf("15%d", i))
+		phonePrefixes = append(phonePrefixes, fmt.Sprintf("18%d", i))
+	}
+
+	// 使用简化的哈希函数将用户名转换为整数
+	hashCode := simpleHash(username)
+
+	// 使用哈希值的前2位来选择前缀
+	prefixIndex := hashCode % len(phonePrefixes)
+	phonePrefix := phonePrefixes[prefixIndex]
+
+	// 取哈希值的后8位作为手机号的后8位
+	phoneSuffix := fmt.Sprintf("%08d", hashCode)
+
+	// 将前缀和后缀组合成一个完整的手机号
+	phoneNumber := phonePrefix + phoneSuffix
+
+	return phoneNumber
 }
