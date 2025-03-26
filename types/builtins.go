@@ -576,7 +576,6 @@ var HIDING_MASK_STR2 = &Builtin{
 			S,
 			N32,
 			N32,
-			S,
 		),
 		S,
 	),
@@ -584,6 +583,6 @@ var HIDING_MASK_STR2 = &Builtin{
 
 func HIDING_MASK_STR2_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
 	hiding := anonymity.NewHidingMasker()
-	output, _ := hiding.MaskString1(args[0].(string), args[1].(int), args[2].(int), args[3].(string))
+	output, _ := hiding.MaskString1(args[0].(string), args[1].(int), args[2].(int), "*")
 	return output
 }
