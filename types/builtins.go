@@ -94,6 +94,7 @@ var DefaultBuiltins = []*Builtin{
 	PHONE_MASK,
 	CUSTOMER_MASK_MD_ID,
 	CUSTOMER_MASK_PHONE_NUMBER,
+	HIDING_MASK_STR2,
 }
 
 var DefaultHandlerBuiltins = map[string]BuiltinFunc{
@@ -116,6 +117,7 @@ var DefaultHandlerBuiltins = map[string]BuiltinFunc{
 	PHONE_MASK.Name:                 PHONE_MASK_HANDLE,
 	CUSTOMER_MASK_MD_ID.Name:        CUSTOMER_MASK_MD_ID_HANDLE,
 	CUSTOMER_MASK_PHONE_NUMBER.Name: CUSTOMER_MASK_PHONE_NUMBER_HANDLE,
+	HIDING_MASK_STR2.Name:           HIDING_MASK_STR2_HANDLE,
 }
 
 func init() {
@@ -565,4 +567,23 @@ func generatePhoneNumber(username string) string {
 	phoneNumber := phonePrefix + phoneSuffix
 
 	return phoneNumber
+}
+
+var HIDING_MASK_STR2 = &Builtin{
+	Name: "mx.customer.mask_str",
+	Decl: NewFunction(
+		Args(
+			S,
+			N32,
+			N32,
+			S,
+		),
+		S,
+	),
+}
+
+func HIDING_MASK_STR2_HANDLE(bctx *BuiltinContext, args []interface{}) interface{} {
+	hiding := anonymity.NewHidingMasker()
+	output, _ := hiding.MaskString1(args[0].(string), args[1].(int), args[2].(int), args[3].(string))
+	return output
 }

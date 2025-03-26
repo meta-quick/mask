@@ -40,15 +40,18 @@ func (h *HidingMasker) MaskFloat64(in float64) (float64, error) {
 	return 0, nil
 }
 
-func (h *HidingMasker) MaskString(in string,replace string) (string, error) {
+func (h *HidingMasker) MaskString(in string, replace string) (string, error) {
 	return replace, nil
 }
 
-func (h *HidingMasker) MaskString0(in string,overlay string,start,end int) (string, error) {
-	return utils.OverlayString(in,overlay,start,end),nil
+func (h *HidingMasker) MaskString0(in string, overlay string, start, end int) (string, error) {
+	return utils.OverlayString(in, overlay, start, end), nil
+}
+
+func (h *HidingMasker) MaskString1(in string, left, right int, mask string) (string, error) {
+	return utils.MaskString(in, left, right, mask), nil
 }
 
 func (h *HidingMasker) MaskTime(in *time.Time) (time.Time, error) {
 	return time.Now(), nil
 }
-
