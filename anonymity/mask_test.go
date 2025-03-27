@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/meta-quick/mask/utils"
 	"github.com/rkritchat/jsonmask"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -19,5 +20,11 @@ func Test_mask(tt *testing.T) {
 }
 
 func Test_mask1(tt *testing.T) {
-	fmt.Println(utils.MaskString("张三三", 1, 1, "*"))
+	assert.Equal(tt, "张*", utils.MaskString("张三", 1, 1, "*"))
+	assert.Equal(tt, "张*三", utils.MaskString("张三三", 1, 1, "*"))
+	assert.Equal(tt, "张三三三三三", utils.MaskString("张三三三三三", 6, 1, "*"))
+	assert.Equal(tt, "张*三三三三", utils.MaskString("张三三三三三", 1, 6, "*"))
+	assert.Equal(tt, "张*****", utils.MaskString("张三三三三三", 1, -1, "*"))
+	assert.Equal(tt, "******", utils.MaskString("张三三三三三", 0, 0, "*"))
+	assert.Equal(tt, "张三三三三三", utils.MaskString("张三三三三三", 0, 6, "*"))
 }

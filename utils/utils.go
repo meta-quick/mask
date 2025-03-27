@@ -89,10 +89,13 @@ func MaskString(s string, left, right int, maskChar string) string {
 	}
 
 	// 计算实际能保留的右边位数（剩余长度是否足够）
-	remaining := length - left - 1
+	remaining := length
+	if left > 0 {
+		remaining = length - left - 1
+	}
 	actualRight := right
 	if remaining < actualRight {
-		actualRight = 0 // 不足时忽略 right
+		actualRight = remaining // 不足时忽略 right
 	}
 
 	// 左边部分
